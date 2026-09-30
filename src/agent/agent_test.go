@@ -6,10 +6,50 @@ import (
 	"testing"
 
 	"github.com/hashicorp/consul/api"
+	"github.com/newrelic/infra-integrations-sdk/v3/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/v3/integration"
 	"github.com/newrelic/nri-consul/src/args"
+	"github.com/newrelic/nri-consul/src/metrics"
 	"github.com/newrelic/nri-consul/src/testutils"
 )
+
+func Test_GaugeNameMatches(t *testing.T) {
+	tests := []struct {
+		name     string
+		gauge    string
+		apiKey   string
+		expected bool
+	}{
+		{"exact match, no hostname", "consul.runtime.num_goroutines", "consul.runtime.num_goroutines", true},
+		{"hostname-prefixed match", "consul.ip-10-10-50-192.runtime.num_goroutines", "consul.runtime.num_goroutines", true},
+		{"fqdn hostname-prefixed match", "consul.node1.example.com.runtime.num_goroutines", "consul.runtime.num_goroutines", true},
+		{"different metric, same suffix length", "consul.other.num_goroutines", "consul.runtime.num_goroutines", false},
+		{"unrelated metric", "consul.acl.cache_hit", "consul.runtime.num_goroutines", false},
+	}
+
+	for _, test := range tests {
+		if got := gaugeNameMatches(test.gauge, test.apiKey); got != test.expected {
+			t.Errorf("%s: gaugeNameMatches(%q, %q) = %v, expected %v", test.name, test.gauge, test.apiKey, got, test.expected)
+		}
+	}
+}
+
+func Test_CollectGaugeMetrics_HostnamePrefixed(t *testing.T) {
+	metricSet := metric.NewSet("ConsulAgentSample", nil)
+
+	gauges := []api.GaugeValue{
+		{Name: "consul.ip-10-10-50-192.runtime.num_goroutines", Value: 49},
+	}
+	defs := []*metrics.MetricDefinition{
+		{APIKey: "consul.runtime.num_goroutines", MetricName: "runtime.goroutines", SourceType: metric.GAUGE},
+	}
+
+	collectGaugeMetrics(metricSet, gauges, defs)
+
+	if got := metricSet.Metrics["runtime.goroutines"]; got != float64(49) {
+		t.Errorf("Expected runtime.goroutines to be 49, got %v", got)
+	}
+}
 
 func TestCreateAgents(t *testing.T) {
 	mux, hostname, port, serverClose := testutils.SetupServer()

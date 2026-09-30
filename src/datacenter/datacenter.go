@@ -64,8 +64,9 @@ func getDatacenterName(client *api.Client) (*string, error) {
 	return &dcName, nil
 }
 
-// CollectMetrics collects all datacenter level metrics
-func (dc *Datacenter) CollectMetrics() {
+// CollectMetrics collects all datacenter level metrics. When collectHealthChecks
+// is true, it also emits a ConsulHealthCheckSample per registered health check.
+func (dc *Datacenter) CollectMetrics(collectHealthChecks bool) {
 	metricSet := dc.entity.NewMetricSet("ConsulDatacenterSample",
 		attribute.Attribute{Key: "displayName", Value: dc.entity.Metadata.Name},
 		attribute.Attribute{Key: "entityName", Value: dc.entity.Metadata.Namespace + ":" + dc.entity.Metadata.Name},
@@ -73,7 +74,7 @@ func (dc *Datacenter) CollectMetrics() {
 	)
 
 	// collect leader agent metrics
-	if err := dc.leader.CollectCoreMetrics(metricSet, nil, counterMetrics, timerMetrics); err != nil {
+	if err := dc.leader.CollectCoreMetrics(metricSet, gaugeMetrics, counterMetrics, timerMetrics); err != nil {
 		log.Error("Error collecting leader metrics for Datacenter: %s", err.Error())
 	}
 
@@ -85,6 +86,12 @@ func (dc *Datacenter) CollectMetrics() {
 	// collect node health counts
 	if err := dc.collectStatusCounts(metricSet); err != nil {
 		log.Error("Error getting node health counts: %s", err.Error())
+	}
+
+	if collectHealthChecks {
+		if err := dc.collectHealthChecks(); err != nil {
+			log.Error("Error collecting health checks for Datacenter: %s", err.Error())
+		}
 	}
 }
 

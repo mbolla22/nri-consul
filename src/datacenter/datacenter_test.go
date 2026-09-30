@@ -264,7 +264,7 @@ func Test_Datacenter_CollectMetrics_Full(t *testing.T) {
 		"catalog.passingNodes":             float64(1),
 	}
 
-	c.CollectMetrics()
+	c.CollectMetrics(false)
 
 	result := c.entity.Metrics[0].Metrics
 	if !reflect.DeepEqual(result, expected) {
@@ -320,7 +320,7 @@ func Test_Datacenter_CollectMetrics_All_Endpoint_Fails(t *testing.T) {
 		"leader":      "leader",
 	}
 
-	c.CollectMetrics()
+	c.CollectMetrics(false)
 
 	result := c.entity.Metrics[0].Metrics
 	if !reflect.DeepEqual(result, expected) {
@@ -596,4 +596,45 @@ func setMetricMuxes(mux *http.ServeMux) {
 			}
 		]`)
 	})
+}
+
+func Test_Datacenter_CollectMetrics_MeshCAExpiry(t *testing.T) {
+	mux, hostname, port, serverClose := testutils.SetupServer()
+	defer serverClose()
+
+	mux.HandleFunc("/v1/agent/metrics", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{
+			"Gauges": [
+				{
+					"Name": "consul.ip-10-10-50-192.mesh.active-root-ca.expiry",
+					"Value": 3110400,
+					"Labels": {}
+				},
+				{
+					"Name": "consul.ip-10-10-50-192.mesh.active-signing-ca.expiry",
+					"Value": 259200,
+					"Labels": {}
+				}
+			],
+			"Counters": [],
+			"Samples": []
+		}`)
+	})
+	mux.HandleFunc("/v1/catalog/nodes", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `[]`)
+	})
+	mux.HandleFunc("/v1/catalog/services", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{}`)
+	})
+
+	dc := newTestDatacenter(t, mux, hostname, port)
+	dc.CollectMetrics(false)
+
+	result := dc.entity.Metrics[0].Metrics
+	if got := result["mesh.activeRootCAExpiryInSeconds"]; got != float64(3110400) {
+		t.Errorf("Expected mesh.activeRootCAExpiryInSeconds to be 3110400, got %v", got)
+	}
+	if got := result["mesh.activeSigningCAExpiryInSeconds"]; got != float64(259200) {
+		t.Errorf("Expected mesh.activeSigningCAExpiryInSeconds to be 259200, got %v", got)
+	}
 }

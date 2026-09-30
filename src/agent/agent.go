@@ -190,6 +190,20 @@ func (a *Agent) CollectCoreMetrics(metricSet *metric.Set, gaugeDefs, counterDefs
 	return nil
 }
 
+// gaugeNameMatches compares a raw gauge name against a configured API key.
+// Consul prefixes gauge names (but not counters/timers) with the agent's
+// hostname when telemetry.disable_hostname is false (the default), e.g.
+// "consul.<hostname>.runtime.num_goroutines" instead of "consul.runtime.num_goroutines".
+// This matches either form.
+func gaugeNameMatches(name, apiKey string) bool {
+	if name == apiKey {
+		return true
+	}
+
+	suffix := strings.TrimPrefix(apiKey, "consul.")
+	return strings.HasPrefix(name, "consul.") && strings.HasSuffix(name, "."+suffix)
+}
+
 func collectGaugeMetrics(metricSet *metric.Set, gauges []api.GaugeValue, defs []*metrics.MetricDefinition) {
 	for _, def := range defs {
 		found := false
@@ -197,7 +211,7 @@ func collectGaugeMetrics(metricSet *metric.Set, gauges []api.GaugeValue, defs []
 		// Look through all gauges for metric
 		for _, gauge := range gauges {
 			// If found, record and break
-			if def.APIKey == gauge.Name {
+			if gaugeNameMatches(gauge.Name, def.APIKey) {
 				value := gauge.Value
 
 				// special case where we need to convert nanoseconds to milliseconds
