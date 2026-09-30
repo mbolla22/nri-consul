@@ -1,0 +1,1551 @@
+{
+  "name": "Consul Complete \u2014 Health & Metrics Dashboard",
+  "description": "Full-stack Consul observability via nri-consul (this fork): agent metrics (including fixed runtime/GC telemetry), datacenter metrics, per-check health status filterable by service/node, an SLO-style uptime trend, a per-check status mosaic, and certificate-expiry telemetry mappings (Enterprise-only in practice on Consul today).",
+  "permissions": "PUBLIC_READ_WRITE",
+  "variables": [
+    {
+      "name": "serviceName",
+      "title": "Service",
+      "type": "NRQL",
+      "isMultiSelection": true,
+      "nrqlQuery": {
+        "accountIds": [
+          1015429
+        ],
+        "query": "SELECT uniques(serviceName) FROM ConsulHealthCheckSample WHERE serviceName IS NOT NULL AND serviceName != ''"
+      },
+      "replacementStrategy": "STRING",
+      "defaultValues": [
+        {
+          "value": {
+            "string": "auth"
+          }
+        },
+        {
+          "value": {
+            "string": "billing"
+          }
+        },
+        {
+          "value": {
+            "string": "cache"
+          }
+        },
+        {
+          "value": {
+            "string": "gateway"
+          }
+        },
+        {
+          "value": {
+            "string": "inventory"
+          }
+        },
+        {
+          "value": {
+            "string": "messaging"
+          }
+        },
+        {
+          "value": {
+            "string": "analytics"
+          }
+        },
+        {
+          "value": {
+            "string": "notifications"
+          }
+        },
+        {
+          "value": {
+            "string": "payments"
+          }
+        },
+        {
+          "value": {
+            "string": "scheduler"
+          }
+        },
+        {
+          "value": {
+            "string": "search"
+          }
+        },
+        {
+          "value": {
+            "string": "storage"
+          }
+        },
+        {
+          "value": {
+            "string": "web"
+          }
+        }
+      ]
+    },
+    {
+      "name": "node",
+      "title": "Node",
+      "type": "NRQL",
+      "isMultiSelection": true,
+      "nrqlQuery": {
+        "accountIds": [
+          1015429
+        ],
+        "query": "SELECT uniques(node) FROM ConsulHealthCheckSample"
+      },
+      "replacementStrategy": "STRING",
+      "defaultValues": [
+        {
+          "value": {
+            "string": "ip-10-10-50-192"
+          }
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "Overview",
+      "description": "Cluster-wide health at a glance",
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "height": 2,
+            "row": 1,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "# Consul Fleet Overview\nLive health-check, agent, and cluster telemetry from `nri-consul` (custom fork with per-check visibility). Default time window: last 30 minutes."
+          }
+        },
+        {
+          "title": "Total Health Checks",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 3,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT count(*) FROM ConsulHealthCheckSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Critical Checks",
+          "layout": {
+            "column": 4,
+            "height": 3,
+            "row": 3,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT filter(count(*), WHERE check.status = 'critical') FROM ConsulHealthCheckSample SINCE 30 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "title": "Warning Checks",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 3,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT filter(count(*), WHERE check.status = 'warning') FROM ConsulHealthCheckSample SINCE 30 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "title": "Passing Checks",
+          "layout": {
+            "column": 10,
+            "height": 3,
+            "row": 3,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT filter(count(*), WHERE check.status = 'passing') FROM ConsulHealthCheckSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Cluster Health Score (% passing)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 6,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT percentage(count(*), WHERE check.status = 'passing') FROM ConsulHealthCheckSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Registered Nodes",
+          "layout": {
+            "column": 5,
+            "height": 3,
+            "row": 6,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(catalog.registeredNodes) FROM ConsulDatacenterSample SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Raft Peers",
+          "layout": {
+            "column": 9,
+            "height": 3,
+            "row": 6,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(agent.peers) FROM ConsulAgentSample SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Check Status Distribution",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 9,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.pie"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT count(*) FROM ConsulHealthCheckSample FACET check.status SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Check Status Over Time",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 9,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.area"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT count(*) FROM ConsulHealthCheckSample FACET check.status TIMESERIES SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Checks Needing Attention (non-passing, most severe first)",
+          "layout": {
+            "column": 1,
+            "height": 4,
+            "row": 12,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT node, serviceName, checkName, check.status, check.output FROM ConsulHealthCheckSample WHERE check.statusCode > 0 SINCE 30 minutes ago ORDER BY check.statusCode DESC LIMIT 50"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Cluster Health Trend \u2014 % Passing (SLO-style)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 16,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT percentage(count(*), WHERE check.status = 'passing') FROM ConsulHealthCheckSample TIMESERIES SINCE 3 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Checks by Service (filtered by Service/Node variables above)",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 16,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT node, serviceName, checkName, check.status FROM ConsulHealthCheckSample WHERE serviceName IN ({{serviceName}}) OR serviceName = '' SINCE 30 minutes ago LIMIT 50"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "description": "Per-check, per-service, per-node detail",
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "height": 2,
+            "row": 1,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "# Health Checks \u2014 Deep Dive\nPer-service and per-node breakdown of Consul health-check status (`ConsulHealthCheckSample`, one event per registered check)."
+          }
+        },
+        {
+          "title": "Critical Checks by Service",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 3,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT count(*) FROM ConsulHealthCheckSample WHERE check.status = 'critical' FACET serviceName SINCE 30 minutes ago LIMIT 15"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Critical Checks by Node",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 3,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT count(*) FROM ConsulHealthCheckSample WHERE check.status = 'critical' FACET node SINCE 30 minutes ago LIMIT 15"
+              }
+            ]
+          }
+        },
+        {
+          "title": "All Checks by Service",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 6,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT count(*) FROM ConsulHealthCheckSample FACET serviceName SINCE 30 minutes ago LIMIT 15"
+              }
+            ]
+          }
+        },
+        {
+          "title": "All Checks by Node",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 6,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT count(*) FROM ConsulHealthCheckSample FACET node SINCE 30 minutes ago LIMIT 15"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Status Code Trend by Check (0=passing, 1=warning, 2=critical, 3=maintenance)",
+          "layout": {
+            "column": 1,
+            "height": 4,
+            "row": 9,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT average(check.statusCode) FROM ConsulHealthCheckSample FACET checkName TIMESERIES SINCE 60 minutes ago LIMIT 10"
+              }
+            ]
+          }
+        },
+        {
+          "title": "All Health Checks \u2014 Full Detail",
+          "layout": {
+            "column": 1,
+            "height": 4,
+            "row": 13,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT node, checkID, checkName, serviceID, serviceName, check.status, check.statusCode, check.output FROM ConsulHealthCheckSample SINCE 30 minutes ago LIMIT 100"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agent & Cluster Metrics",
+      "description": "Core agent and datacenter telemetry",
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "height": 2,
+            "row": 1,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "# Agent & Datacenter Telemetry\nCore `ConsulAgentSample` / `ConsulDatacenterSample` metrics \u2014 the original nri-consul coverage, unchanged by this fork."
+          }
+        },
+        {
+          "title": "ACL Cache Hit Rate (/min)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 3,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT rate(sum(agent.aclCacheHit), 1 minute) FROM ConsulAgentSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "ACL Cache Miss Rate (/min)",
+          "layout": {
+            "column": 4,
+            "height": 3,
+            "row": 3,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT rate(sum(agent.aclCacheMiss), 1 minute) FROM ConsulAgentSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Max Latency (ms)",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 3,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(net.agent.maxLatencyInMilliseconds) FROM ConsulAgentSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "KV Store Avg (ms)",
+          "layout": {
+            "column": 10,
+            "height": 3,
+            "row": 3,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(agent.kvStoresAvgInMilliseconds) FROM ConsulAgentSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Transactions & KV Ops Rate (/min)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 6,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT rate(sum(agent.txns), 1 minute) AS 'Transactions/min', rate(sum(agent.kvStoress), 1 minute) AS 'KV Ops/min' FROM ConsulAgentSample TIMESERIES SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Txn & KV Avg Latency (ms)",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 6,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT average(agent.txnAvgInMilliseconds) AS 'Txn Avg ms', average(agent.kvStoresAvgInMilliseconds) AS 'KV Avg ms' FROM ConsulAgentSample TIMESERIES SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Catalog Node Health (Aggregate)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 9,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(catalog.passingNodes) AS 'Passing', latest(catalog.warningNodes) AS 'Warning', latest(catalog.criticalNodes) AS 'Critical' FROM ConsulDatacenterSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Raft Apply Rate (/min)",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 9,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT rate(sum(raft.txns), 1 minute) FROM ConsulDatacenterSample TIMESERIES SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Datacenter Snapshot",
+          "layout": {
+            "column": 1,
+            "height": 4,
+            "row": 12,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT displayName, leader, catalog.registeredNodes, catalog.passingNodes, catalog.warningNodes, catalog.criticalNodes, raft.txns, raft.commitTimeAvgInMilliseconds FROM ConsulDatacenterSample SINCE 30 minutes ago LIMIT 20"
+              }
+            ]
+          }
+        },
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "height": 1,
+            "row": 16,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "### Runtime Health *(newly fixed this update \u2014 previously always null due to a hostname-prefix matching bug)*"
+          }
+        },
+        {
+          "title": "Goroutines",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 17,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(runtime.goroutines) FROM ConsulAgentSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Heap Objects",
+          "layout": {
+            "column": 5,
+            "height": 3,
+            "row": 17,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(runtime.heapObjects) FROM ConsulAgentSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "GC Cycles (total)",
+          "layout": {
+            "column": 9,
+            "height": 3,
+            "row": 17,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(runtime.gcCycles) FROM ConsulAgentSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Virtual Address Space (bytes)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 20,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT average(runtime.virtualAddressSpaceInBytes) FROM ConsulAgentSample TIMESERIES SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "GC Pause Time (ms)",
+          "layout": {
+            "column": 7,
+            "height": 3,
+            "row": 20,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT average(runtime.gcPauseInMilliseconds) FROM ConsulAgentSample TIMESERIES SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Allocations vs Frees (count/interval)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 23,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT average(runtime.allocations) AS 'Allocations', average(runtime.frees) AS 'Frees' FROM ConsulAgentSample TIMESERIES SINCE 60 minutes ago"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check Grid",
+      "description": "Compact honeycomb-style status mosaic with live cluster context",
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "height": 1,
+            "row": 1,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "# Health Check Grid \u2014 compact mosaic. Green = passing, yellow = warning, red = critical/maintenance. Cluster context below is pulled from the original `ConsulAgentSample` / `ConsulDatacenterSample` events."
+          }
+        },
+        {
+          "title": "Registered Nodes",
+          "layout": {
+            "column": 1,
+            "height": 2,
+            "row": 2,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(catalog.registeredNodes) FROM ConsulDatacenterSample SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Datacenter Leader",
+          "layout": {
+            "column": 4,
+            "height": 2,
+            "row": 2,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(leader) FROM ConsulDatacenterSample SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Raft Peers",
+          "layout": {
+            "column": 7,
+            "height": 2,
+            "row": 2,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(agent.peers) FROM ConsulAgentSample SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "ACL Cache Hit Rate (/min)",
+          "layout": {
+            "column": 10,
+            "height": 2,
+            "row": 2,
+            "width": 3
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT rate(sum(agent.aclCacheHit), 1 minute) FROM ConsulAgentSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "height": 1,
+            "row": 4,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "### Per-check status"
+          }
+        },
+        {
+          "title": "node",
+          "layout": {
+            "column": 1,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'serfHealth' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "auth",
+          "layout": {
+            "column": 2,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-auth' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "inventory",
+          "layout": {
+            "column": 3,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-inventory' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "cache",
+          "layout": {
+            "column": 4,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-cache' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "billing",
+          "layout": {
+            "column": 5,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-billing' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "payments",
+          "layout": {
+            "column": 6,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'service:payments1' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "web",
+          "layout": {
+            "column": 7,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-web' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "search",
+          "layout": {
+            "column": 8,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-search' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "gateway",
+          "layout": {
+            "column": 9,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-gateway' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "notif",
+          "layout": {
+            "column": 10,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-notifications' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "analytics",
+          "layout": {
+            "column": 11,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-analytics' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "scheduler",
+          "layout": {
+            "column": 12,
+            "height": 2,
+            "row": 5,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-scheduler' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "storage",
+          "layout": {
+            "column": 1,
+            "height": 2,
+            "row": 7,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-storage' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "messaging",
+          "layout": {
+            "column": 2,
+            "height": 2,
+            "row": 7,
+            "width": 1
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(check.statusCode) FROM ConsulHealthCheckSample WHERE checkID = 'ttl-messaging' SINCE 5 minutes ago"
+              }
+            ],
+            "thresholds": [
+              {
+                "alertSeverity": "WARNING",
+                "value": 1
+              },
+              {
+                "alertSeverity": "CRITICAL",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "height": 1,
+            "row": 9,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "**Legend:** 0 = passing (green) &nbsp;|&nbsp; 1 = warning (yellow) &nbsp;|&nbsp; 2-3 = critical/maintenance (red)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Certificate Telemetry",
+      "description": "Leaf cert, mesh CA, and agent TLS cert expiry \u2014 empirically Enterprise-only on Consul today",
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "height": 4,
+            "row": 1,
+            "width": 12
+          },
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "# Certificate Telemetry\n\nConsul added per-service leaf-certificate expiry/renewal-failure telemetry and mesh CA expiry gauges (`consul.leaf-certs.cert_expiry`, `cert_renewal_failure`, `mesh.active-root-ca.expiry`, `mesh.active-signing-ca.expiry`, `agent.tls.cert.expiry`). This fork maps all of them (`ConsulCertSample`, plus gauges on `ConsulAgentSample`/`ConsulDatacenterSample`).\n\n**These widgets are expected to show no data on this environment.** Tested empirically against three real OSS Consul builds (1.20.5, 2.0.4, 2.1.0-rc1) \u2014 none emit these gauges, despite the changelog not marking the feature `(Enterprise Only)`. In practice it appears Enterprise-gated. The mapping is kept because it's harmless on OSS (matches nothing, logs at debug level) and will start populating automatically if run against Consul Enterprise with this feature, or if it ships in a future OSS release. Agent TLS cert expiry additionally requires the agent's own HTTP/RPC TLS to be enabled, independent of the Enterprise gating above."
+          }
+        },
+        {
+          "title": "Leaf Cert Samples (Enterprise Consul only)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 5,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT count(*) FROM ConsulCertSample SINCE 30 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Mesh Root CA Expiry (days)",
+          "layout": {
+            "column": 5,
+            "height": 3,
+            "row": 5,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(mesh.activeRootCAExpiryInSeconds)/86400 FROM ConsulDatacenterSample SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Mesh Signing CA Expiry (days)",
+          "layout": {
+            "column": 9,
+            "height": 3,
+            "row": 5,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(mesh.activeSigningCAExpiryInSeconds)/86400 FROM ConsulDatacenterSample SINCE 60 minutes ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Leaf Certificates \u2014 Current Expiry",
+          "layout": {
+            "column": 1,
+            "height": 4,
+            "row": 8,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT datacenter, namespace, service, kind, cert.expiryInSeconds FROM ConsulCertSample WHERE cert.expiryInSeconds IS NOT NULL SINCE 30 minutes ago LIMIT 50"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Leaf Cert Renewal Failures",
+          "layout": {
+            "column": 7,
+            "height": 4,
+            "row": 8,
+            "width": 6
+          },
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT datacenter, namespace, service, kind FROM ConsulCertSample WHERE cert.renewalFailing IS NOT NULL SINCE 30 minutes ago LIMIT 50"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Agent TLS Cert Expiry (days)",
+          "layout": {
+            "column": 1,
+            "height": 3,
+            "row": 12,
+            "width": 4
+          },
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": 1015429,
+                "query": "SELECT latest(agent.tlsCertExpiryInSeconds)/86400 FROM ConsulAgentSample SINCE 60 minutes ago"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
