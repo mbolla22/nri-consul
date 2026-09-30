@@ -141,7 +141,7 @@ func TestCollectMetrics_CoreMetrics(t *testing.T) {
 		"agent.txnMaxInMilliseconds":         float64(5),
 	}
 
-	CollectMetrics(agents)
+	CollectMetrics(agents, true)
 
 	result := agent.entity.Metrics[0].Metrics
 	if !reflect.DeepEqual(result, expected) {
@@ -206,7 +206,7 @@ func TestCollectMetrics_PeerMetrics(t *testing.T) {
 		"agent.peers": float64(3),
 	}
 
-	CollectMetrics(agents)
+	CollectMetrics(agents, false)
 
 	result := agent.entity.Metrics[0].Metrics
 	if !reflect.DeepEqual(result, expected) {
@@ -334,7 +334,7 @@ func TestCollectMetrics_LatencyMetrics(t *testing.T) {
 		"net.agent.p99LatencyInMilliseconds":    0.453482732462,
 	}
 
-	CollectMetrics(agents)
+	CollectMetrics(agents, false)
 
 	result := agent.entity.Metrics[0].Metrics
 	if !reflect.DeepEqual(result, expected) {

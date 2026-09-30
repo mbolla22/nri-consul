@@ -24,6 +24,8 @@ type ArgumentList struct {
 	CABundleDir            string `default:"" help:"Alternative Certificate Authority bundle directory"`
 	FanOut                 bool   `default:"true" help:"If true will attempt to gather metrics from all other nodes in consul cluster"`
 	CheckLeadership        bool   `default:"true" help:"Check leadership on consul server. This should be disabled on consul in client mode"`
+	EnableHealthChecks     bool   `default:"true" help:"If true, collect a ConsulHealthCheckSample event per registered health check (node and service level), reporting its status. This should be disabled on large clusters with a lot of checks to avoid excessive event cardinality"`
+	EnableCertMetrics      bool   `default:"true" help:"If true, collect a ConsulCertSample event per tracked leaf certificate, reporting expiry and renewal-failure status (Consul 1.22+/2.0+). Also enables agent TLS/mesh CA expiry gauges when present."`
 	ShowVersion            bool   `default:"false" help:"Print build information and exit"`
 }
 

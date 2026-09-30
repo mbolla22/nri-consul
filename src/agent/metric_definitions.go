@@ -46,6 +46,16 @@ var gaugeMetrics = []*metrics.MetricDefinition{
 		MetricName: "runtime.gcCycles",
 		SourceType: metric.GAUGE,
 	},
+	{
+		APIKey:     "consul.agent.tls.cert.expiry",
+		MetricName: "agent.tlsCertExpiryInSeconds",
+		SourceType: metric.GAUGE,
+	},
+	{
+		APIKey:     "consul.leaf-certs.entries_count",
+		MetricName: "certs.leafCacheEntries",
+		SourceType: metric.GAUGE,
+	},
 }
 
 var counterMetrics = []*metrics.MetricDefinition{

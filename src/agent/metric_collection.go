@@ -8,9 +8,9 @@ import (
 )
 
 // CollectMetrics does a metric collect for a group of agents
-func CollectMetrics(agents []*Agent) {
+func CollectMetrics(agents []*Agent, collectCertMetrics bool) {
 	var wg sync.WaitGroup
-	agentChan := createMetricPool(&wg)
+	agentChan := createMetricPool(&wg, collectCertMetrics)
 
 	for _, agent := range agents {
 		agentChan <- agent
@@ -21,17 +21,17 @@ func CollectMetrics(agents []*Agent) {
 	wg.Wait()
 }
 
-func createMetricPool(wg *sync.WaitGroup) chan *Agent {
+func createMetricPool(wg *sync.WaitGroup, collectCertMetrics bool) chan *Agent {
 	agentChan := make(chan *Agent)
 	wg.Add(workerCount)
 	for i := 0; i < workerCount; i++ {
-		go metricWorker(agentChan, wg)
+		go metricWorker(agentChan, wg, collectCertMetrics)
 	}
 
 	return agentChan
 }
 
-func metricWorker(agentChan <-chan *Agent, wg *sync.WaitGroup) {
+func metricWorker(agentChan <-chan *Agent, wg *sync.WaitGroup, collectCertMetrics bool) {
 	defer wg.Done()
 
 	for {
@@ -40,13 +40,13 @@ func metricWorker(agentChan <-chan *Agent, wg *sync.WaitGroup) {
 			return
 		}
 
-		CollectMetricsFromOne(agent)
+		CollectMetricsFromOne(agent, collectCertMetrics)
 
 	}
 }
 
 // CollectMetricsFromOne does a metric collect for a single agent
-func CollectMetricsFromOne(agent *Agent) {
+func CollectMetricsFromOne(agent *Agent, collectCertMetrics bool) {
 	metricSet := agent.entity.NewMetricSet("ConsulAgentSample",
 		attribute.Attribute{Key: "displayName", Value: agent.entity.Metadata.Name},
 		attribute.Attribute{Key: "entityName", Value: agent.entity.Metadata.Namespace + ":" + agent.entity.Metadata.Name},
@@ -69,4 +69,10 @@ func CollectMetricsFromOne(agent *Agent) {
 		log.Error("Error collecting latency metrics for Agent '%s': %s", agent.entity.Metadata.Name, err.Error())
 	}
 
+	// Leaf certificate expiry/renewal-failure metrics
+	if collectCertMetrics {
+		if err := agent.collectLeafCertMetrics(); err != nil {
+			log.Error("Error collecting leaf cert metrics for Agent '%s': %s", agent.entity.Metadata.Name, err.Error())
+		}
+	}
 }

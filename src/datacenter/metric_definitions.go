@@ -5,6 +5,19 @@ import (
 	"github.com/newrelic/nri-consul/src/metrics"
 )
 
+var gaugeMetrics = []*metrics.MetricDefinition{
+	{
+		APIKey:     "consul.mesh.active-root-ca.expiry",
+		MetricName: "mesh.activeRootCAExpiryInSeconds",
+		SourceType: metric.GAUGE,
+	},
+	{
+		APIKey:     "consul.mesh.active-signing-ca.expiry",
+		MetricName: "mesh.activeSigningCAExpiryInSeconds",
+		SourceType: metric.GAUGE,
+	},
+}
+
 var counterMetrics = []*metrics.MetricDefinition{
 	{
 		APIKey:     "consul.memberlist.msg.suspect",

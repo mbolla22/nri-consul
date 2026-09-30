@@ -91,7 +91,7 @@ func fanOutCollection(client *api.Client, i *integration.Integration, args *args
 	if err != nil {
 		log.Error("Error creating Datacenter entity: %s", err.Error())
 	} else if args.HasMetrics() {
-		dc.CollectMetrics()
+		dc.CollectMetrics(args.EnableHealthChecks)
 	}
 
 	// Collect inventory for agents
@@ -101,7 +101,7 @@ func fanOutCollection(client *api.Client, i *integration.Integration, args *args
 
 	// Collect metrics for Agents and cluster
 	if args.HasMetrics() {
-		agent.CollectMetrics(agents)
+		agent.CollectMetrics(agents, args.EnableCertMetrics)
 	}
 
 	return nil
@@ -188,12 +188,12 @@ func localCollection(client *api.Client, i *integration.Integration, args *args.
 			if err != nil {
 				log.Error("Failed to get datacenter metrics: %v", err)
 			} else {
-				dc.CollectMetrics()
+				dc.CollectMetrics(args.EnableHealthChecks)
 			}
 		} else {
 			log.Debug("Not Checking Leader Metrics")
 		}
-		agent.CollectMetricsFromOne(agentInstance)
+		agent.CollectMetricsFromOne(agentInstance, args.EnableCertMetrics)
 	}
 
 	if args.HasInventory() {
